@@ -197,8 +197,22 @@
     return tbl[a] + (tbl[b] - tbl[a]) * (i - a);
   }
 
+  /* Altura estable en celular: la barra del navegador aparece y se esconde al hacer scroll y cambia
+     innerHeight. Usamos la altura "grande" (100lvh, la misma de la escena) para que nada brinque. */
+  var probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:100vh;height:100lvh;visibility:hidden;pointer-events:none';
+  document.body.appendChild(probe);
+  var lastW = 0, lastH = 0;
+  function stableH() { return Math.max(probe.offsetHeight || 0, window.innerHeight); }
+  function onResize() {
+    var w = window.innerWidth, h = stableH();
+    /* Si solo cambió la altura un poco (barra del navegador), no se recalcula la escena */
+    if (w === lastW && Math.abs(h - lastH) < 160) return;
+    layout();
+  }
+
   function layout() {
-    vw = window.innerWidth; vh = window.innerHeight;
+    vw = window.innerWidth; vh = stableH(); lastW = vw; lastH = vh;
     if (video.duration && isFinite(video.duration)) dur = video.duration;
     narrow = vw < 768 || vw <= vh;
     scene.classList.toggle('is-narrow', narrow);
@@ -219,6 +233,11 @@
     top1 = edgeY - FINAL * clipH;
     top0 = Math.max(top1, vh * (narrow ? .78 : .8) - EDGES[0] * clipH);
     scene.style.setProperty('--hero-top', (narrow ? 92 : Math.max(96, vh * .15)).toFixed(0) + 'px');
+    /* En celular la máquina de la portada no debe tapar los botones: su brazo (18 % del cuadro) queda debajo del texto */
+    if (narrow && hero) {
+      var heroBottom = hero.offsetTop + hero.offsetHeight + 18;
+      top0 = Math.max(top0, Math.min(heroBottom - .18 * clipH, vh * .9 - EDGES[0] * clipH));
+    }
     left1 = left;
     video.style.width = clipW.toFixed(1) + 'px';
     video.style.height = clipH.toFixed(1) + 'px';
@@ -330,7 +349,7 @@
     requestAnimationFrame(function () { render(); ticking = false; });
   }, { passive: true });
   window.addEventListener('touchstart', prime, { passive: true, once: true });
-  window.addEventListener('resize', layout);
+  window.addEventListener('resize', onResize);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
   window.addEventListener('load', layout);
   layout();
@@ -761,7 +780,8 @@
     items.forEach(function (el) { el.style.setProperty('--st', Math.min(0, vh - el.offsetHeight) + 'px'); });
   }
   fit();
-  window.addEventListener('resize', fit);
+  var fw = window.innerWidth;
+  window.addEventListener('resize', function () { if (window.innerWidth !== fw) { fw = window.innerWidth; fit(); } });
   window.addEventListener('load', fit);
   if (window.ResizeObserver) new ResizeObserver(fit).observe(stack);
 })();
