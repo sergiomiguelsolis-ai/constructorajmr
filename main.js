@@ -28,6 +28,16 @@
   /* Menú móvil */
   var toggle = document.querySelector('[data-nav-toggle]');
   var menu = document.querySelector('[data-menu]');
+  /* Submenú de servicios en móvil: plegado por defecto, se abre con la flechita */
+  var subBtn = document.querySelector('[data-sub-toggle]');
+  function setSub(open) {
+    if (!subBtn) return;
+    subBtn.setAttribute('aria-expanded', String(open));
+    subBtn.querySelector('.sr-only').textContent = open ? 'Ocultar servicios' : 'Mostrar servicios';
+    subBtn.parentNode.classList.toggle('sub-open', open);
+  }
+  if (subBtn) subBtn.addEventListener('click', function (e) { e.preventDefault(); setSub(subBtn.getAttribute('aria-expanded') !== 'true'); });
+
   function closeMenu() {
     toggle.setAttribute('aria-expanded', 'false');
     toggle.querySelector('.sr-only').textContent = 'Abrir menú';
@@ -41,6 +51,8 @@
     toggle.querySelector('.sr-only').textContent = open ? 'Cerrar menú' : 'Abrir menú';
     menu.classList.toggle('is-open', open);
     document.body.classList.toggle('menu-open', open);
+    /* El menú siempre abre desde arriba y con los servicios plegados */
+    if (open) { menu.scrollTop = 0; setSub(false); }
     document.body.style.overflow = open ? 'hidden' : '';
   });
   menu.addEventListener('click', function (e) { if (e.target.closest('a')) closeMenu(); });
@@ -185,7 +197,7 @@
   var FPS = 24, CW = 1248, CH = 704, FINAL = .669;
 
   var A = 2.4, B = 2, vw = 0, vh = 0, narrow = false, stripW = 0, giantW = 0;
-  var lineY0 = 0, lineSlope = 0, edgeYc = 0;
+  var lineY0 = 0, lineSlope = 0, edgeYc = 0, headerB = 0;
   var clipTop = 0, top0 = 0, top1 = 0, left0 = 0, left1 = 0, clipH = 0, dur = 8.333;
   var target = 0, cur = 0, shown = 0, seeking = false, primed = false;
   var lastY = window.scrollY, lastT = performance.now(), speed = 0;
@@ -221,7 +233,11 @@
       clipW = Math.max(vw * 1.6, 560); clipH = clipW * CH / CW;
       left = vw * .5 - clipW * .55;
       left0 = vw * .5 - clipW * .45;
-      edgeY = vh * .4;
+      /* En celular la escena final queda pegada al menú: la parte de arriba del video
+         (donde el brazo se sale del cuadro) siempre queda escondida detrás de la barra */
+      var hdr = document.querySelector('[data-header]');
+      headerB = (hdr ? hdr.offsetHeight : 70) - 3;
+      edgeY = headerB + FINAL * clipH;
     } else {
       clipH = Math.min(vh * .84, vw * CH / CW * 1.02); clipW = clipH * CW / CH;
       left = (vw - clipW) / 2;
@@ -260,6 +276,11 @@
   /* El piso del DOM sigue al borde del cuadro que se ve, así la banda llega de lado a lado */
   function place(t) {
     var e = edgeAt(t), f = (EDGES[0] - e) / (EDGES[0] - FINAL);
+    if (narrow) {
+      /* En celular, en cuanto se va el texto la máquina sube rápido hasta el menú,
+         antes de que el brazo llegue al borde del cuadro (≈1.7 s) */
+      var g = clamp((t - .3) / 1.2); f = g * g * (3 - 2 * g);
+    }
     clipTop = top0 + (top1 - top0) * f;
     var x = left0 + (left1 - left0) * f, clipW = clipH * CW / CH;
     video.style.transform = 'translate3d(' + x.toFixed(1) + 'px,' + clipTop.toFixed(1) + 'px,0)';
