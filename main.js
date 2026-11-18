@@ -183,6 +183,7 @@
   var q = function (s) { return scene.querySelector(s); };
   var video = q('[data-video]'), floor = q('[data-floor]'), cutout = q('[data-cutout]');
   var strip = q('[data-strip]'), giant = q('[data-giant]');
+  var cue = q('[data-scroll-cue]');
   var readN = q('[data-readout-n]'), hero = q('[data-sx-hero]'), foot = q('[data-sx-foot]');
   var cards = Array.prototype.slice.call(scene.querySelectorAll('[data-card]'));
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -235,8 +236,17 @@
       left0 = vw * .5 - clipW * .45;
       /* En celular la escena final queda pegada al menú: la parte de arriba del video
          (donde el brazo se sale del cuadro) siempre queda escondida detrás de la barra */
-      var hdr = document.querySelector('[data-header]');
-      headerB = (hdr ? hdr.offsetHeight : 70) - 3;
+      /* Se mide el menú en su versión compacta (con scroll), que es como se ve cuando la máquina sube */
+      var hdr = document.querySelector('[data-header]'), hadSolid = hdr && hdr.classList.contains('is-solid');
+      if (hdr) {
+        var tr = hdr.style.transition; hdr.style.transition = 'none';
+        var lg = hdr.querySelectorAll('.logo'); lg.forEach(function (l) { l.style.transition = 'none'; });
+        hdr.classList.add('is-solid');
+        headerB = hdr.offsetHeight;
+        if (!hadSolid) hdr.classList.remove('is-solid');
+        void hdr.offsetHeight; hdr.style.transition = tr; lg.forEach(function (l) { l.style.transition = ''; });
+      } else headerB = 64;
+      headerB -= 1;
       edgeY = headerB + FINAL * clipH;
     } else {
       clipH = Math.min(vh * .84, vw * CH / CW * 1.02); clipW = clipH * CW / CH;
@@ -342,6 +352,7 @@
     kick();
 
     /* La portada se va con los primeros movimientos del scroll */
+    if (cue) cue.classList.toggle('is-gone', window.scrollY > 8);
     var k = clamp(pA / .07);
     hero.style.opacity = (1 - k).toFixed(3);
     hero.style.transform = 'translate3d(0,' + (-60 * k).toFixed(1) + 'px,0)';

@@ -1013,3 +1013,16 @@ html, body, .track { overflow-anchor: none; }
 @media (max-width: 860px) {
   .menu { top: 0; left: 0; right: 0; bottom: auto; height: 100vh; height: 100dvh; overscroll-behavior: contain; }
 }
+
+/* ===== Indicador de scroll (solo celular) ===== */
+.scroll-cue { display: none; }
+.scene.is-narrow .sx-hero-actions { position: relative; padding-right: 84px; }
+.scene.is-narrow .scroll-cue {
+  position: absolute; right: 0; top: 50%; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  width: 64px; transform: translateY(-50%); pointer-events: none; transition: opacity .35s var(--ease);
+}
+.scroll-cue img { width: 52px; height: auto; opacity: .9; animation: cue-bob 1.8s var(--ease) infinite; }
+.scroll-cue small { font: 600 10px/1 var(--f-body); letter-spacing: .16em; text-transform: uppercase; color: var(--navy); }
+.scroll-cue.is-gone { opacity: 0; }
+@keyframes cue-bob { 0%, 100% { transform: translateY(-3px); } 50% { transform: translateY(5px); } }
+@media (prefers-reduced-motion: reduce) { .scroll-cue img { animation: none; } }
